@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qubit -Mail Service</title>
+    
+    <!-- Google Fonts: 'Inter' & 'JetBrains Mono' for that Tech/Dev feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Pro Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom Config for Tech Theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        slate: { 850: '#151e2e' } // Custom dark shade
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b1120;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.15), transparent 25%);
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Custom Scrollbar */
+        .scroller::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scroller::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        .scroller::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+        .scroller::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-item {
+            animation: fadeUp 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center p-4 lg:p-8 text-slate-300 overflow-hidden">
+
+    <div class="glass-panel w-full max-w-6xl h-[90vh] rounded-2xl flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- LEFT SIDEBAR: CONTROLS -->
+        <div class="w-full md:w-1/3 bg-slate-900/50 p-6 flex flex-col border-r border-slate-700/50">
+            
+            <!-- Branding -->
+            <div class="mb-8 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-layer-group text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-white font-bold text-xl tracking-tight">Qubit -Mail Service<span class="text-indigo-400">Filter</span></h1>
+                    <p class="text-xs text-slate-500 font-mono">Qubit Server Connected</p>
+                </div>
+            </div>
+
+            <!-- Upload Area -->
+            <div id="dropzone" class="border-2 border-dashed border-slate-600 rounded-xl bg-slate-800/30 h-32 flex flex-col items-center justify-center cursor-pointer transition-all hover:border-indigo-500 hover:bg-slate-800/60 group">
+                <input type="file" id="fileInput" hidden>
+                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center mb-2 group-hover:bg-indigo-600 transition-colors">
+                    <i class="fa-solid fa-cloud-arrow-up text-white"></i>
+                </div>
+                <p class="text-sm font-medium text-slate-400 group-hover:text-white">Click or Drop File</p>
+                <p class="text-xs text-slate-600">.TXT or .CSV supported</p>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="mt-6 space-y-4 flex-1">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Filter By Status</label>
+                    <div class="relative">
+                        <select id="statusFilter" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-3 appearance-none outline-none">
+                            <option value="ALL">Show All Emails</option>
+                            <option value="VALID">Valid Only</option>
+                            <option value="INVALID">Invalid Only</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Filter By Domain</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-globe absolute left-3 top-3.5 text-slate-500"></i>
+                        <input type="text" id="domainFilter" placeholder="ex: gmail.com" class="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-3 outline-none placeholder-slate-600">
+                    </div>
+                </div>
+
+                <button onclick="removeDuplicates()" class="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 border border-slate-600 mt-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-yellow-400"></i> Remove Duplicates
+                </button>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="mt-auto pt-6 border-t border-slate-700/50 grid grid-cols-2 gap-3">
+                <button onclick="exportTXT()" class="flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-200 transition-all">
+                    <i class="fa-solid fa-file-lines"></i> Export TXT
+                </button>
+                <button onclick="exportCSV()" class="flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-200 transition-all">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: OUTPUT TERMINAL -->
+        <div class="w-full md:w-2/3 bg-[#0d1117] flex flex-col relative">
+            
+            <!-- Terminal Header -->
+            <div class="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-mono text-indigo-400 font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-terminal"></i> OUTPUT PREVIEW
+                    </span>
+                    <span id="countBadge" class="bg-slate-800 text-slate-400 text-xs px-2 py-1 rounded border border-slate-700 hidden font-mono">0</span>
+                </div>
+
+                <!-- THE MONEY BUTTON (Copy All) -->
+                <button onclick="copyToClipboard()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-lg shadow-indigo-500/30 transition-all active:scale-95 flex items-center gap-2 group">
+                    <span>Copy All Emails</span>
+                    <i class="fa-regular fa-copy group-hover:animate-pulse"></i>
+                </button>
+            </div>
+
+            <!-- Terminal Body (The Output) -->
+            <div id="output" class="flex-1 overflow-y-auto scroller p-6 font-mono text-sm leading-relaxed">
+                <!-- Initial Empty State -->
+                <div class="h-full flex flex-col items-center justify-center text-slate-600 opacity-60">
+                    <i class="fa-solid fa-code-branch text-4xl mb-4"></i>
+                    <p>Ready to process data...</p>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="h-8 bg-slate-900 border-t border-slate-800 flex items-center px-4 justify-between text-[10px] text-slate-500 font-mono uppercase">
+                <span id="systemStatus">System Idle</span>
+                <span>UTF-8 MODE</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-8 right-8 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-xl shadow-emerald-500/20 transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3 font-medium z-50">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">Action Successful</span>
+    </div>
+
+<script>
+    let emails = [];
+    let filtered = [];
+
+    // Elements
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const outputDiv = document.getElementById("output");
+    const countBadge = document.getElementById("countBadge");
+    const systemStatus = document.getElementById("systemStatus");
+
+    // File Handling
+    dropzone.onclick = () => fileInput.click();
+    
+    dropzone.ondragover = e => {
+        e.preventDefault();
+        dropzone.classList.add("border-indigo-500", "bg-slate-800/80");
+    }
+    
+    dropzone.ondragleave = e => {
+        dropzone.classList.remove("border-indigo-500", "bg-slate-800/80");
+    }
+
+    dropzone.ondrop = e => {
+        e.preventDefault();
+        dropzone.classList.remove("border-indigo-500", "bg-slate-800/80");
+        if(e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    }
+
+    fileInput.onchange = () => {
+        if(fileInput.files.length) loadFile(fileInput.files[0]);
+    }
+
+    function loadFile(file) {
+        systemStatus.innerText = "Reading File...";
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            parseEmails(e.target.result);
+            applyFilter();
+            showToast("File loaded successfully!");
+            systemStatus.innerText = "Processing Complete";
+        }
+        reader.readAsText(file);
+    }
+
+    function parseEmails(text) {
+        emails = [];
+        const lines = text.split(/\r?\n/);
+        
+        lines.forEach(line => {
+            if(!line.trim()) return;
+            const parts = line.split(",");
+            if(parts.length >= 2) {
+                emails.push({ email: parts[0].trim(), status: parts[1].trim().toUpperCase() });
+            } else if(line.includes("@")) {
+                emails.push({ email: line.trim(), status: "UNKNOWN" });
+            }
+        });
+    }
+
+    // Filter Logic
+    document.getElementById("statusFilter").onchange = applyFilter;
+    document.getElementById("domainFilter").oninput = applyFilter;
+
+    function applyFilter() {
+        const status = document.getElementById("statusFilter").value;
+        const domain = document.getElementById("domainFilter").value.toLowerCase();
+
+        filtered = emails.filter(e => {
+            let ok = true;
+            if(status != "ALL") ok = ok && e.status == status;
+            if(domain) ok = ok && e.email.toLowerCase().endsWith("@" + domain);
+            return ok;
+        });
+
+        display();
+    }
+
+    function display() {
+        // Update Counter
+        countBadge.innerText = filtered.length;
+        countBadge.classList.remove("hidden");
+
+        if(filtered.length === 0 && emails.length === 0) return;
+
+        if(filtered.length === 0) {
+            outputDiv.innerHTML = `<div class="h-full flex items-center justify-center text-slate-600">No matches found</div>`;
+            return;
+        }
+
+        // Render List (No line numbers in copy logic, but slight index visual for UX)
+        // Note: The HTML is for display only. The Copy function uses the 'filtered' array directly.
+        let html = `<div class="space-y-1">`;
+        filtered.forEach((e, i) => {
+            let colorClass = "text-slate-300";
+            if(e.status === 'VALID') colorClass = "text-emerald-400";
+            if(e.status === 'INVALID') colorClass = "text-red-400";
+
+            html += `
+            <div class="flex items-center gap-3 hover:bg-slate-800/50 p-1 rounded px-2 group">
+                <span class="text-slate-600 text-[10px] w-6 text-right select-none opacity-50">${i+1}</span>
+                <span class="${colorClass} select-all">${e.email}</span>
+            </div>`;
+        });
+        html += `</div>`;
+        outputDiv.innerHTML = html;
+    }
+
+    function removeDuplicates() {
+        if(!filtered.length) return;
+        const map = new Map();
+        filtered.forEach(e => map.set(e.email.toLowerCase(), e));
+        
+        const removedCount = filtered.length - map.size;
+        filtered = Array.from(map.values());
+        
+        display();
+        showToast(removedCount > 0 ? `Removed ${removedCount} duplicates` : "No duplicates found");
+    }
+
+    // --- MAIN COPY FEATURE ---
+    function copyToClipboard() {
+        if(!filtered.length) {
+            showToast("Nothing to copy!");
+            return;
+        }
+
+        // Extract ONLY emails, join with new lines
+        const textToCopy = filtered.map(e => e.email).join("\n");
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showToast("Copied " + filtered.length + " emails!");
+        }).catch(err => {
+            showToast("Failed to copy");
+            console.error(err);
+        });
+    }
+
+    // Export Functions
+    function exportTXT() {
+        if(!filtered.length) return showToast("No data to export");
+        const text = filtered.map(e => e.email).join("\n");
+        download(text, "emails.txt");
+        showToast("TXT Downloaded");
+    }
+
+    function exportCSV() {
+        if(!filtered.length) return showToast("No data to export");
+        const text = "Email,Status\n" + filtered.map(e => `${e.email},${e.status}`).join("\n");
+        download(text, "filtered_emails.csv");
+        showToast("CSV Downloaded");
+    }
+
+    function download(text, filename) {
+        const blob = new Blob([text], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        document.getElementById("toastMsg").innerText = message;
+        toast.classList.remove("translate-y-24", "opacity-0");
+        setTimeout(() => toast.classList.add("translate-y-24", "opacity-0"), 2500);
+    }
+
+</script>
+
+</body>
+</html>
